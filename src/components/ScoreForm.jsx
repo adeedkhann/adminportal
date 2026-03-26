@@ -1,36 +1,44 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import { FiX, FiSave } from 'react-icons/fi'
+import { gradeTeam } from '@/services/api'
 
 const criteriaConfig = {
-  Understanding: 40,
-  Approach: 30,
-  Result: 20,
-  Presentation: 10,
+  understanding: 40,
+  approach: 30,
+  result: 20,
+  presentation: 10,
 }
 
 function ScoreForm({ team, round, onClose, onSave }) {
   const [scores, setScores] = useState({
-    Understanding: 0,
-    Approach: 0,
-    Result: 0,
-    Presentation: 0,
+    understanding: 0,
+    approach: 0,
+    result: 0,
+    presentation: 0,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    // TODO: Fetch existing scores if needed
-    // const fetchScores = async () => {
-    //   try {
-    //     const response = await axios.get(`YOUR_API_URL/api/scores/${team.id}/${round}`)
-    //     setScores(response.data.scores)
-    //   } catch (err) {
-    //     console.error('Error fetching scores:', err)
-    //   }
-    // }
-    // fetchScores()
-  }, [team.id, round])
+    // Extract existing scores from team if available
+    if (team.scores && team.scores.length > 0) {
+      const roundNum = extractRoundNumber(round)
+      const existingScore = team.scores.find(s => s.round === roundNum)
+      if (existingScore) {
+        setScores({
+          understanding: existingScore.understanding || 0,
+          approach: existingScore.approach || 0,
+          result: existingScore.result || 0,
+          presentation: existingScore.presentation || 0,
+        })
+      }
+    }
+  }, [team, round])
+
+  const extractRoundNumber = (roundStr) => {
+    // Convert "round1", "round2", "round3" to 1, 2, 3
+    return parseInt(roundStr.replace('round', '')) || 1
+  }
 
   const handleScoreChange = (criterion, value) => {
     const maxValue = criteriaConfig[criterion] || 100
@@ -42,11 +50,8 @@ function ScoreForm({ team, round, onClose, onSave }) {
   }
 
   const calculateTotal = () => {
-    const values = Object.entries(scores)
-    const sum = values.reduce((acc, [criterion, val]) => {
-      const max = criteriaConfig[criterion] || 100
-      return acc + Number(val)
-    }, 0)
+    const values = Object.values(scores)
+    const sum = values.reduce((acc, val) => acc + Number(val), 0)
     return sum.toFixed(2)
   }
 
@@ -56,22 +61,27 @@ function ScoreForm({ team, round, onClose, onSave }) {
     setLoading(true)
 
     try {
-      // TODO: Replace with your API endpoint
-      // const response = await axios.post('YOUR_API_URL/api/scores/save', {
-      //   teamId: team.id,
-      //   round: round,
-      //   scores: scores,
-      // })
-
-      // Demo data update
-      const updatedTeam = {
-        ...team,
-        [`score${round.charAt(0).toUpperCase() + round.slice(1)}`]: Number(calculateTotal())
+      const roundNum = extractRoundNumber(round)
+      const teamId = team._id
+      
+      if (!teamId) {
+        setError('Team ID not available')
+        setLoading(false)
+        return
       }
+      
+      await gradeTeam(teamId, {
+        round: roundNum,
+        understanding: scores.understanding,
+        approach: scores.approach,
+        result: scores.result,
+        presentation: scores.presentation,
+      })
 
-      onSave(updatedTeam)
+      // Success - call onSave to refresh
+      onSave()
     } catch (err) {
-      setError('Error saving scores')
+      setError(err.response?.data?.message || 'Error saving scores')
       console.error(err)
     } finally {
       setLoading(false)
@@ -97,7 +107,7 @@ function ScoreForm({ team, round, onClose, onSave }) {
         {/* Team Info */}
         <div className="px-6 py-4 bg-gray-50 border-b">
           <p className="text-sm text-gray-600 mb-1">Team</p>
-          <p className="font-semibold text-gray-900">{team.name}</p>
+          <p className="font-semibold text-gray-900">{team.teamName}</p>
           <p className="text-sm text-gray-600 mt-3 mb-1">Round</p>
           <p className="font-semibold text-gray-900">{roundName}</p>
         </div>
@@ -109,7 +119,7 @@ function ScoreForm({ team, round, onClose, onSave }) {
             {Object.entries(criteriaConfig).map(([criterion, maxScore]) => (
               <div key={criterion}>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  {criterion} (max {maxScore})
+                  {criterion.charAt(0).toUpperCase() + criterion.slice(1)} (max {maxScore})
                 </label>
                 <div className="flex items-center">
                   <input

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { FiLogOut, FiEdit2, FiUser } from 'react-icons/fi'
 import ScoreForm from '@/components/ScoreForm'
+import { getAllTeams } from '@/services/api'
 import mlcoelogo1 from '@/assets/mlcoelogo1.svg'
 
 function Dashboard({ admin, onLogout }) {
@@ -21,41 +21,34 @@ function Dashboard({ admin, onLogout }) {
   const fetchTeams = async () => {
     try {
       setLoading(true)
-      // TODO: Replace with your API endpoint
-      // const response = await axios.get('YOUR_API_URL/api/teams')
-      // setTeams(response.data)
+      const response = await getAllTeams()
+      
+      // Map backend response to frontend format
+      const formattedTeams = response.data.data.map((team) => {
+        // Extract scores for each round from the scores array
+        const scoresByRound = {}
+        team.scores.forEach(score => {
+          scoresByRound[score.round] = score.totalScore
+        })
 
-      // Demo data
-      const demoTeams = [
-        {
-          id: 1,
-          name: 'Vision Coders',
-          leader: 'Ananya Rao',
-          dataset: 'Smart Domain Set',
-          scoreRound1: 0,
-          scoreRound2: 0,
-          scoreRound3: 0
-        },
-        {
-          id: 2,
-          name: 'Data Warriors',
-          leader: 'John Doe',
-          dataset: 'Financial Analytics',
-          scoreRound1: 0,
-          scoreRound2: 0,
-          scoreRound3: 0
-        },
-        {
-          id: 3,
-          name: 'AI Innovators',
-          leader: 'Alex Johnson',
-          dataset: 'ML Predictions',
-          scoreRound1: 0,
-          scoreRound2: 0,
-          scoreRound3: 0
+        // Handle dataset - extract name or convert to string
+        const datasetName = typeof team.dataset === 'object' 
+          ? (team.dataset?.name || team.dataset?.title || 'N/A')
+          : team.dataset || 'N/A'
+
+        return {
+          _id: team._id, // MongoDB ObjectId
+          teamName: team.teamName,
+          members: team.members,
+          dataset: datasetName,
+          scoreRound1: scoresByRound[1] || 0,
+          scoreRound2: scoresByRound[2] || 0,
+          scoreRound3: scoresByRound[3] || 0,
+          scores: team.scores
         }
-      ]
-      setTeams(demoTeams)
+      })
+
+      setTeams(formattedTeams)
       setError('')
     } catch (err) {
       setError('Failed to load teams')
@@ -66,14 +59,16 @@ function Dashboard({ admin, onLogout }) {
   }
 
   const handleEditScore = (team, round) => {
+    // For now, pass team object with teamName as identifier
+    // Once backend returns _id or accepts teamName, this will work seamlessly
     setSelectedTeam(team)
     setSelectedRound(round)
     setShowForm(true)
   }
 
-  const handleScoreSaved = (updatedTeam) => {
-    const updated = teams.map(t => (t.id === updatedTeam.id ? updatedTeam : t))
-    setTeams(updated)
+  const handleScoreSaved = async () => {
+    // Refresh teams after saving
+    await fetchTeams()
     setShowForm(false)
     setSelectedTeam(null)
     setSelectedRound(null)
@@ -85,10 +80,10 @@ function Dashboard({ admin, onLogout }) {
   }
 
   const calculateTotalScore = (team) => {
-    const a = Number(team.scoreRound1 || 0)
-    const b = Number(team.scoreRound2 || 0)
-    const c = Number(team.scoreRound3 || 0)
-    return (a + b + c).toFixed(2)
+    const round1 = Number(team.scoreRound1 || 0)
+    const round2 = Number(team.scoreRound2 || 0)
+    const round3 = Number(team.scoreRound3 || 0)
+    return (round1 + round2 + round3).toFixed(2)
   }
 
   return (
@@ -145,18 +140,18 @@ function Dashboard({ admin, onLogout }) {
                 </tr>
               </thead>
               <tbody>
-                {teams.map((team, index) => (
+                {teams.map((team) => (
                   <tr
-                    key={team.id}
-                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100  transition`}
+                    key={team._id || team.teamName}
+                    className={`hover:bg-gray-100 transition`}
                   >
-                    <td className="px-6 py-4 text-gray-900 font-semibold">{team.name}</td>
-                    <td className="px-6 py-4 text-gray-700">{team.leader}</td>
+                    <td className="px-6 py-4 text-gray-900 font-semibold">{team.teamName}</td>
+                    <td className="px-6 py-4 text-gray-700">{team.members && team.members.length > 0 ? team.members[0] : 'N/A'}</td>
                     <td className="px-6 py-4 text-gray-700">{team.dataset}</td>
                     {[1, 2, 3].map((roundNum) => {
                       const score = Number(team[`scoreRound${roundNum}`] || 0)
                       return (
-                        <td key={roundNum} className="px-6 py-4  text-center">
+                        <td key={roundNum} className="px-6 py-4 text-center">
                           <button
                             onClick={() => handleEditScore(team, `round${roundNum}`)}
                             className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition ${
