@@ -152,16 +152,22 @@ function Dashboard({ admin, onLogout }) {
                       const score = Number(team[`scoreRound${roundNum}`] || 0)
                       return (
                         <td key={roundNum} className="px-6 py-4 text-center">
-                          <button
-                            onClick={() => handleEditScore(team, `round${roundNum}`)}
-                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition ${
+                          <div className="inline-flex items-center gap-2">
+                            <span className={`px-3 py-2 rounded-lg font-semibold ${
                               score > 0
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            {score > 0 ? score : <><FiEdit2 size={16} /> Edit</>}
-                          </button>
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-200 text-gray-700'
+                            }`}>
+                              {score > 0 ? score : '-'}
+                            </span>
+                            <button
+                              onClick={() => handleEditScore(team, `round${roundNum}`)}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                              title={`Edit Round ${roundNum} score`}
+                            >
+                              <FiEdit2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       )
                     })}
