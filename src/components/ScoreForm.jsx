@@ -11,10 +11,10 @@ const criteriaConfig = {
 
 function ScoreForm({ team, round, onClose, onSave }) {
   const [scores, setScores] = useState({
-    understanding: 0,
-    approach: 0,
-    result: 0,
-    presentation: 0,
+    understanding: '',
+    approach: '',
+    result: '',
+    presentation: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -26,10 +26,10 @@ function ScoreForm({ team, round, onClose, onSave }) {
       const existingScore = team.scores.find(s => s.round === roundNum)
       if (existingScore) {
         setScores({
-          understanding: existingScore.understanding || 0,
-          approach: existingScore.approach || 0,
-          result: existingScore.result || 0,
-          presentation: existingScore.presentation || 0,
+          understanding: existingScore.understanding || '',
+          approach: existingScore.approach || '',
+          result: existingScore.result || '',
+          presentation: existingScore.presentation || '',
         })
       }
     }
@@ -42,7 +42,8 @@ function ScoreForm({ team, round, onClose, onSave }) {
 
   const handleScoreChange = (criterion, value) => {
     const maxValue = criteriaConfig[criterion] || 100
-    const numValue = Math.min(Math.max(parseFloat(value) || 0, 0), maxValue)
+    // Allow empty string for empty input, otherwise validate number
+    const numValue = value === '' ? '' : Math.min(Math.max(parseFloat(value) || 0, 0), maxValue)
     setScores({
       ...scores,
       [criterion]: numValue,
@@ -72,10 +73,10 @@ function ScoreForm({ team, round, onClose, onSave }) {
       
       await gradeTeam(teamId, {
         round: roundNum,
-        understanding: scores.understanding,
-        approach: scores.approach,
-        result: scores.result,
-        presentation: scores.presentation,
+        understanding: scores.understanding === '' ? 0 : scores.understanding,
+        approach: scores.approach === '' ? 0 : scores.approach,
+        result: scores.result === '' ? 0 : scores.result,
+        presentation: scores.presentation === '' ? 0 : scores.presentation,
       })
 
       // Success - call onSave to refresh
@@ -92,7 +93,7 @@ function ScoreForm({ team, round, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
         {/* Header */}
         <div className="bg-black text-white px-6 py-4 flex justify-between items-center sticky top-0">
           <h2 className="text-xl font-bold">Score Form</h2>
@@ -129,7 +130,7 @@ function ScoreForm({ team, round, onClose, onSave }) {
                     step="0.5"
                     value={scores[criterion]}
                     onChange={(e) => handleScoreChange(criterion, e.target.value)}
-                    placeholder="0"
+                    placeholder="Enter score"
                     disabled={loading}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent disabled:bg-gray-100 text-sm"
                   />

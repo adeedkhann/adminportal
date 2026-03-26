@@ -23,7 +23,7 @@ function LoginPage({ onLogin }) {
       // })
 
       // Demo hardcoded validation
-      if (email === 'admin@example.com' && password === 'admin123') {
+      if (email === 'admin@mlcoe.com' && password === 'convo@2620') {
         const adminData = {
           email: email,
           name: 'Admin User'
@@ -111,14 +111,7 @@ function LoginPage({ onLogin }) {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <p className="text-xs text-gray-600 mb-2 font-semibold">Demo Credentials:</p>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-700"><span className="font-semibold">Email:</span> admin@example.com</p>
-              <p className="text-xs text-gray-700"><span className="font-semibold">Password:</span> admin123</p>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>
